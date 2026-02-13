@@ -33,12 +33,15 @@ if [ -n "$ut" ]; then
     exit 0
 fi
 
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_OPTIONS=("--race") # enable race detection
 if [ -n "$verbose" ]; then
     BUILD_OPTIONS+=("-v")
 fi
 if [ "${type}" == "Release" ]; then
-    BUILD_OPTIONS+=("-ldflags=-s -w")
+    BUILD_OPTIONS+=("-ldflags=-s -w -X main.gitCommit=${GIT_COMMIT}")
+else
+    BUILD_OPTIONS+=("-ldflags=-X main.gitCommit=${GIT_COMMIT}")
 fi
 
 

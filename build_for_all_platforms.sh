@@ -5,6 +5,7 @@
 
 
 set -e
+GIT_COMMIT=$(git rev-parse --short HEAD)
 PLATFORMS=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64" "windows/amd64" "windows/arm64")
 OUTPUT_NAME="elephant"
 
@@ -15,7 +16,7 @@ for PLATFORM in "${PLATFORMS[@]}"; do
         OUTPUT_FILE+=".exe"
     fi
     echo "Building for $GOOS/$GOARCH..."
-    env GOOS="$GOOS" GOARCH="$GOARCH" go build -ldflags="-s -w" -o "$OUTPUT_FILE" .
+    env GOOS="$GOOS" GOARCH="$GOARCH" go build -ldflags="-s -w -X main.gitCommit=${GIT_COMMIT}" -o "$OUTPUT_FILE" .
     echo "Created artifact: $OUTPUT_FILE"
 done
 

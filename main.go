@@ -20,12 +20,13 @@ const (
 )
 
 var (
+	gitCommit = "unknown"
 	enableLog bool
 )
 
 func init() {
 	flag.Usage = func() {
-		_, err := fmt.Fprintf(os.Stderr, "Elephant SOCKS5 Tunnel Client\n\nUsage:\n  elephant [flags]\n\nFlags:\n")
+		_, err := fmt.Fprintf(os.Stderr, "Elephant SOCKS5 Tunnel Client (commit: %s)\n\nUsage:\n  elephant [flags]\n\nFlags:\n", gitCommit)
 		if err != nil {
 			log.Fatalf("Failed to write to stderr: %v", err)
 		}
