@@ -6,3 +6,5 @@ require (
 	github.com/spf13/pflag v1.0.9
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
+
+require bitbucket.org/JeremySchlatter/go-atexit v0.0.0-20140521230709-4d24881b3b10

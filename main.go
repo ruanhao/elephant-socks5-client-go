@@ -6,7 +6,13 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
+
+	"bitbucket.org/JeremySchlatter/go-atexit"
+	"github.com/ruanhao/elephant/internal"
 
 	flag "github.com/spf13/pflag"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -82,8 +88,38 @@ func setupLog() {
 	}
 }
 
+func setupAppConfig() {
+	internal.AppConfig.Global = global
+	internal.AppConfig.ServerHost = serverHost
+	internal.AppConfig.ServerPort = serverPort
+	internal.AppConfig.Alias = alias
+	internal.AppConfig.Socks5ListeningPort = port
+	internal.AppConfig.DebugHTTPPort = debugPort
+	internal.AppConfig.FlowControl = flowControl
+}
+
 func main() {
+	atexit.TrapSignals()
+	defer atexit.CallExitFuncs()
+
+	atexit.Run(func() {
+		time.Sleep(500 * time.Millisecond) // give time to flush logs
+		//_, err := fmt.Fprintf(os.Stderr, "elephant exits\n")
+		//if err != nil {
+		//	return
+		//}
+	})
+
 	flag.Parse()
 	setupLog()
+	setupAppConfig()
+
 	slog.Info("hello, elephant!!")
+	slog.Info("App config", "config", internal.AppConfig)
+
+	// Wait for interrupt signal to gracefully shut down the application
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	sig := <-sigCh
+	slog.Info("Received signal, shutting down...", "signal", sig)
 }

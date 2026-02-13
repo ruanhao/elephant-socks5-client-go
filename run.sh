@@ -48,5 +48,5 @@ fi
 if [ -z "$just_compile" ]; then
     go run ./...
 else
-    go build "${BUILD_OPTIONS[@]}" -o elephant ./...
+    go build "${BUILD_OPTIONS[@]}" -o elephant .
 fi
