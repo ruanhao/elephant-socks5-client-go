@@ -20,8 +20,16 @@ const (
 )
 
 var (
-	gitCommit = "unknown"
-	enableLog bool
+	gitCommit   = "unknown"
+	enableLog   bool
+	serverHost  string
+	serverPort  int
+	alias       string
+	port        int
+	global      bool
+	debugPort   int
+	quiet       bool
+	flowControl bool
 )
 
 func init() {
@@ -36,10 +44,22 @@ func init() {
 	// flag.StringVarP(&logFile, "log-file", "f", ".log/elephant.log", "log file path")
 	// flag.IntVarP(&logMaxSize, "log-max-size", "s", 10, "max size in MB of the log file before it gets rotated")
 	// flag.IntVarP(&logMaxBackups, "log-max-backups", "b", 10, "max number of old log files to keep")
+	flag.BoolVarP(&quiet, "quiet", "q", false, "quiet mode")
+	flag.StringVarP(&serverHost, "server-host", "s", "20.205.132.65", "Elephant server host")
+	flag.IntVarP(&serverPort, "server-port", "", 443, "Elephant server port")
+	flag.StringVarP(&alias, "alias", "a", "", "alias name")
+	flag.IntVarP(&port, "socks5-listening-port", "p", 1080, "SOCKS5 listening port")
+	flag.BoolVarP(&global, "global", "g", false, "SOCKS5 port listening on all interfaces")
+	flag.IntVarP(&debugPort, "debug-port", "", 6060, "debug HTTP server port (0 to disable)")
+	flag.BoolVarP(&flowControl, "flow-control", "f", false, "enable flow control mode")
 
 }
 
 func setupLog() {
+	if quiet {
+		log.SetOutput(io.Discard)
+		return
+	}
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.Lshortfile)
 	if enableLog {
 		// make sure the log directory exists
