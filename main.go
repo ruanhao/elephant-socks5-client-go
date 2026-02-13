@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"bitbucket.org/JeremySchlatter/go-atexit"
-	"github.com/ruanhao/elephant/internal"
-
+	"github.com/ruanhao/elephant/internal/config"
+	"github.com/ruanhao/elephant/internal/tunnel"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -89,13 +89,13 @@ func setupLog() {
 }
 
 func setupAppConfig() {
-	internal.AppConfig.Global = global
-	internal.AppConfig.ServerHost = serverHost
-	internal.AppConfig.ServerPort = serverPort
-	internal.AppConfig.Alias = alias
-	internal.AppConfig.Socks5ListeningPort = port
-	internal.AppConfig.DebugHTTPPort = debugPort
-	internal.AppConfig.FlowControl = flowControl
+	config.AppConfig.Global = global
+	config.AppConfig.ServerHost = serverHost
+	config.AppConfig.ServerPort = serverPort
+	config.AppConfig.Alias = alias
+	config.AppConfig.Socks5ListeningPort = port
+	config.AppConfig.DebugHTTPPort = debugPort
+	config.AppConfig.FlowControl = flowControl
 }
 
 func main() {
@@ -115,11 +115,15 @@ func main() {
 	setupAppConfig()
 
 	slog.Info("hello, elephant!!")
-	slog.Info("App config", "config", internal.AppConfig)
+	slog.Info("App config", "config", config.AppConfig)
+
+	t := tunnel.NewTunnel()
+	t.Start()
 
 	// Wait for interrupt signal to gracefully shut down the application
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	sig := <-sigCh
 	slog.Info("Received signal, shutting down...", "signal", sig)
+
 }

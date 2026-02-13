@@ -1,4 +1,9 @@
-package internal
+package config
+
+import (
+	"crypto/tls"
+	"fmt"
+)
 
 type Config struct {
 	ServerHost          string
@@ -18,4 +23,12 @@ var AppConfig = Config{
 	Socks5ListeningPort: 0,
 	DebugHTTPPort:       0,
 	FlowControl:         false,
+}
+
+var TlsConfig = &tls.Config{
+	InsecureSkipVerify: true,
+}
+
+func GetWebSocketURL() string {
+	return fmt.Sprintf("wss://%s:%d/elephant/ws", AppConfig.ServerHost, AppConfig.ServerPort)
 }

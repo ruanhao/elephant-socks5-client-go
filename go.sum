@@ -1,5 +1,7 @@
 bitbucket.org/JeremySchlatter/go-atexit v0.0.0-20140521230709-4d24881b3b10 h1:ncOdWPC7bTEieZQ1kkyWIoBmIt3OiHWWwOXVfds4JkM=
 bitbucket.org/JeremySchlatter/go-atexit v0.0.0-20140521230709-4d24881b3b10/go.mod h1:pPYksr7JE3RNTQr5anac/w1+v9yVmWE4+t/tYwHT1m8=
+github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
+github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=
 github.com/spf13/pflag v1.0.9/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 gopkg.in/natefinch/lumberjack.v2 v2.2.1 h1:bBRl1b0OH9s/DuPhuXpNl+VtCaJXFZ5/uEFST95x9zc=

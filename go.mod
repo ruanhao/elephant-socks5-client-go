@@ -8,3 +8,5 @@ require (
 )
 
 require bitbucket.org/JeremySchlatter/go-atexit v0.0.0-20140521230709-4d24881b3b10
+
+require github.com/gorilla/websocket v1.5.3 // indirect
