@@ -16,7 +16,8 @@ import (
 )
 
 type Tunnel struct {
-	helloC chan struct{}
+	helloC   chan struct{}
+	echoSent bool
 
 	outboundChannel        chan *bytes.Buffer
 	inboundChannel         <-chan *bytes.Buffer
@@ -142,6 +143,9 @@ func (t *Tunnel) handleJsonRPC(payload *bytes.Buffer) {
 		t.helloC <- struct{}{}
 	case protocol.JSONRPC_METHOD_ECHO_REQUEST:
 		t.handleEchoRequest(jsonRpc)
+	case protocol.JSONRPC_METHOD_ECHO_RESPONSE:
+		slog.Info("Received echo response", "id", jsonRpc.Id)
+		t.echoSent = false
 	default:
 		slog.Warn("Received JSON-RPC message with unhandled method", "method", method)
 	}
@@ -193,7 +197,14 @@ func (t *Tunnel) SpawnHandleInbound() {
 					return
 				}
 				t.tunnelRead(byteBuf)
-
+			case <-time.After(30 * time.Second):
+				if t.echoSent {
+					t.close(fmt.Errorf("timeout waiting for echo response"))
+					return
+				}
+				slog.Warn("No messages received recently, sending echo request to keep connection alive")
+				t.sendEchoRequest()
+				t.echoSent = true
 			case <-t.context.Done():
 				slog.Info("Tunnel handle context done, exiting handle INBOUND loop")
 				return
@@ -234,6 +245,7 @@ func (t *Tunnel) SpawnHandleOutbound() {
 
 func (t *Tunnel) close(err error) {
 	t.closeOnce.Do(func() {
+		slog.Info("Closing tunnel", "err", err)
 		if t.conn != nil {
 			err := t.conn.Close()
 			if err != nil {
@@ -249,6 +261,13 @@ func (t *Tunnel) handleEchoRequest(rpc *protocol.JsonRPC) {
 	slog.Info("Received echo request", "id", rpc.Id)
 	t.outboundChannel <- rpc.Response().ToFrame()
 	slog.Info("Sent echo response", "id", rpc.Id)
+}
+
+func (t *Tunnel) sendEchoRequest() {
+	jrpc := protocol.NewEchoRequest()
+	t.setPendingJsonRpcResponseMethod(jrpc.Id, protocol.JSONRPC_METHOD_ECHO_RESPONSE)
+	t.outboundChannel <- jrpc.ToFrame()
+	slog.Info("Sent echo request", "id", jrpc.Id)
 }
 
 func startLater() {

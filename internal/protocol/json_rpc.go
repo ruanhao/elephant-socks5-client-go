@@ -80,3 +80,11 @@ func NewAgentHello() *JsonRPC {
 		},
 	}
 }
+
+func NewEchoRequest() *JsonRPC {
+	return &JsonRPC{
+		JsonRpc: "2.0",
+		Id:      uuid.New().String(),
+		Method:  JSONRPC_METHOD_ECHO_REQUEST,
+	}
+}
