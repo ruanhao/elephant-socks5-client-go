@@ -36,6 +36,13 @@ func (j *JsonRPC) ToJson() ([]byte, error) {
 	return json.Marshal(j)
 }
 
+func (j *JsonRPC) Response() *JsonRPC {
+	return &JsonRPC{
+		JsonRpc: "2.0",
+		Id:      j.Id,
+	}
+}
+
 func FromByteBuf(buf *bytes.Buffer) (*JsonRPC, error) {
 	var j JsonRPC
 	err := json.Unmarshal(buf.Bytes(), &j)

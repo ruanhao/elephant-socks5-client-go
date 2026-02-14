@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -15,7 +16,7 @@ import (
 )
 
 type Tunnel struct {
-	HelloDone bool
+	helloC chan struct{}
 
 	outboundChannel        chan *bytes.Buffer
 	inboundChannel         <-chan *bytes.Buffer
@@ -30,6 +31,7 @@ type Tunnel struct {
 
 func NewTunnel() *Tunnel {
 	t := &Tunnel{}
+	t.helloC = make(chan struct{})
 	t.outboundChannel = make(chan *bytes.Buffer, 32)
 	t.pendingJsonRpcRequests = make(map[string]string)
 	t.context, t.cancelFunc = context.WithCancelCause(context.Background())
@@ -76,7 +78,7 @@ func (t *Tunnel) getPendingJsonRpcResponseMethod(id string) string {
 }
 
 func (t *Tunnel) Start() {
-
+	defer close(t.helloC)
 	dialer := websocket.Dialer{
 		TLSClientConfig: config.TlsConfig,
 	}
@@ -98,6 +100,15 @@ func (t *Tunnel) Start() {
 	t.SpawnHandleInbound()
 	t.SpawnHandleOutbound()
 	t.SendAgentHello()
+
+	select {
+	case <-t.helloC:
+		slog.Info("Tunnel hello response received, tunnel setup complete")
+	case <-time.After(10 * time.Second):
+		slog.Error("Timeout waiting for tunnel hello response, closing tunnel")
+		t.close(fmt.Errorf("timeout waiting for tunnel hello response"))
+		return
+	}
 
 }
 
@@ -128,8 +139,9 @@ func (t *Tunnel) handleJsonRPC(payload *bytes.Buffer) {
 	}
 	switch method {
 	case protocol.JSONRPC_METHOD_SERVER_HELLO:
-		slog.Info("Received server hello, tunnel setup complete")
-		t.HelloDone = true
+		t.helloC <- struct{}{}
+	case protocol.JSONRPC_METHOD_ECHO_REQUEST:
+		t.handleEchoRequest(jsonRpc)
 	default:
 		slog.Warn("Received JSON-RPC message with unhandled method", "method", method)
 	}
@@ -231,6 +243,12 @@ func (t *Tunnel) close(err error) {
 		t.cancelFunc(err)
 		startLater()
 	})
+}
+
+func (t *Tunnel) handleEchoRequest(rpc *protocol.JsonRPC) {
+	slog.Info("Received echo request", "id", rpc.Id)
+	t.outboundChannel <- rpc.Response().ToFrame()
+	slog.Info("Sent echo response", "id", rpc.Id)
 }
 
 func startLater() {
