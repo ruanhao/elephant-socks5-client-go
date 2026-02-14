@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	JSONRPC_METHOD_AGNET_HELLO = "agent-hello"
+	JSONRPC_METHOD_AGNET_HELLO  = "agent-hello"
+	JSONRPC_METHOD_SERVER_HELLO = "server-hello" // response
 
 	JSONRPC_METHOD_SESSION_REQUEST  = "session-request"
 	JSONRPC_METHOD_SESSION_RESPONSE = "session-response"
@@ -35,7 +36,16 @@ func (j *JsonRPC) ToJson() ([]byte, error) {
 	return json.Marshal(j)
 }
 
-func (j *JsonRPC) ToFrame() bytes.Buffer {
+func FromByteBuf(buf *bytes.Buffer) (*JsonRPC, error) {
+	var j JsonRPC
+	err := json.Unmarshal(buf.Bytes(), &j)
+	if err != nil {
+		return nil, err
+	}
+	return &j, nil
+}
+
+func (j *JsonRPC) ToFrame() *bytes.Buffer {
 	jsonBytes, _ := j.ToJson()
 	jsonByteBuf := bytes.NewBuffer(jsonBytes)
 	header := NewElephantControlHeader(uint16(jsonByteBuf.Len()))
@@ -44,7 +54,7 @@ func (j *JsonRPC) ToFrame() bytes.Buffer {
 	var frame bytes.Buffer
 	frame.Write(headerBuf.Bytes())
 	frame.Write(jsonByteBuf.Bytes())
-	return frame
+	return &frame
 }
 
 func NewAgentHello() *JsonRPC {

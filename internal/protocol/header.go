@@ -17,6 +17,11 @@ type ElephantHeader struct {
 	DataLength   uint16
 }
 
+type Frame struct {
+	ElephantHeader
+	Payload *bytes.Buffer
+}
+
 func NewElephantHeader(op uint8, sessionID, dataLength uint16) ElephantHeader {
 	return ElephantHeader{
 		VersionAndOp: (op << 4) | (2 & 0x0F), // version=2 in low 4 bits, op in high 4 bits
@@ -50,12 +55,32 @@ func (h *ElephantHeader) ToBuffer() *bytes.Buffer {
 	return buf
 }
 
-func FromBytes(byteBuf []byte) (*ElephantHeader, error) {
+func FromBytes(byteBuf []byte) *ElephantHeader {
 	buf := bytes.NewReader(byteBuf)
 	var header ElephantHeader
-	err := binary.Read(buf, binary.BigEndian, &header)
-	if err != nil {
-		return nil, err
+	_ = binary.Read(buf, binary.BigEndian, &header)
+	return &header
+}
+
+func ExtractFrame(byteBuf *bytes.Buffer) *Frame {
+	if byteBuf.Len() < 6 {
+		return nil // Not enough data for header
 	}
-	return &header, nil
+
+	headerBytes := byteBuf.Bytes()[:6]
+	header := FromBytes(headerBytes)
+	if byteBuf.Len() < int(6+header.DataLength) {
+		return nil // Not enough data for payload
+	}
+
+	_ = byteBuf.Next(6) // Consume header bytes
+	payloadBytes := byteBuf.Next(int(header.DataLength))
+	// Copy payload to avoid holding reference to the large underlying buffer
+	payloadCopy := make([]byte, len(payloadBytes))
+	copy(payloadCopy, payloadBytes)
+	return &Frame{
+		ElephantHeader: *header,
+		Payload:        bytes.NewBuffer(payloadCopy),
+	}
+
 }

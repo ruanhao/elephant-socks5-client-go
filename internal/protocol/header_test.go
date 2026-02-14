@@ -17,8 +17,7 @@ func TestBigEndianEncoding(t *testing.T) {
 	expectedBytes := []byte{0x22, 0x00, 0x00, 0x01, 0xff, 0xfd}
 	assert.Equal(t, expectedBytes, header.ToBuffer().Bytes())
 
-	newHeader, err := FromBytes(expectedBytes)
-	assert.NoError(t, err)
+	newHeader := FromBytes(expectedBytes)
 	assert.Equal(t, header, *newHeader)
 
 }
