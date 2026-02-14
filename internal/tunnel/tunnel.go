@@ -1,18 +1,20 @@
 package tunnel
 
 import (
+	"bytes"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/ruanhao/elephant/internal/config"
+	"github.com/ruanhao/elephant/internal/protocol"
 )
 
 type Tunnel struct {
 	HelloDone bool
 
-	outboundDataChannel chan OutboundData
+	outboundDataChannel chan bytes.Buffer
 	conn                *websocket.Conn
 }
 
@@ -22,34 +24,9 @@ type WebsocketInboundMessage struct {
 	Err  error
 }
 
-type OutboundData struct {
-	Data []byte
-}
-
 func NewTunnel() *Tunnel {
 	return &Tunnel{
 		HelloDone: false,
-	}
-}
-
-func handleConnect(conn *websocket.Conn) {
-	defer func(conn *websocket.Conn) {
-		err := conn.Close()
-		if err != nil {
-			slog.Error("Error during closing connection", "error", err)
-		}
-	}(conn)
-	slog.Info("Connected to elephant server")
-
-	// Handle the connection (e.g., read/write messages)
-	for {
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			slog.Error("Error during reading message", "error", err)
-			break
-		}
-		slog.Info("Received message from server", "message", string(message))
-		// Process the message as needed
 	}
 }
 
@@ -86,9 +63,18 @@ func (t *Tunnel) Start() {
 	slog.Info("Tunnel Active")
 
 	inboundWebsocketMessageChannel := t.readPump(conn)
-	t.outboundDataChannel = make(chan OutboundData, 32)
+	t.outboundDataChannel = make(chan bytes.Buffer, 32)
 	t.conn = conn
 	t.SpawnHandle(inboundWebsocketMessageChannel)
+	t.SendAgentHello()
+
+}
+
+func (t *Tunnel) SendAgentHello() {
+	hello := protocol.NewAgentHello()
+	frame := hello.ToFrame()
+	slog.Info("Sending agent hello", "size", frame.Len())
+	t.outboundDataChannel <- frame
 }
 
 func (t *Tunnel) SpawnHandle(inboundWebsocketMessageChannel <-chan WebsocketInboundMessage) {
@@ -106,8 +92,8 @@ func (t *Tunnel) SpawnHandle(inboundWebsocketMessageChannel <-chan WebsocketInbo
 				// Handle the inbound message as needed
 
 			case outboundData := <-t.outboundDataChannel:
-				slog.Info("Sending outbound data", "data", string(outboundData.Data))
-				err := t.conn.WriteMessage(websocket.BinaryMessage, outboundData.Data)
+				slog.Info("Sending outbound data", "size", outboundData.Len())
+				err := t.conn.WriteMessage(websocket.BinaryMessage, outboundData.Bytes())
 				if err != nil {
 					slog.Error("Error during writing message", "error", err)
 					t.CloseConnection()

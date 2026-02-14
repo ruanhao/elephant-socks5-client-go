@@ -3,6 +3,12 @@ package config
 import (
 	"crypto/tls"
 	"fmt"
+	"sync/atomic"
+)
+
+var (
+	Version = "unknown"
+	counter atomic.Int64
 )
 
 type Config struct {
@@ -31,4 +37,9 @@ var TlsConfig = &tls.Config{
 
 func GetWebSocketURL() string {
 	return fmt.Sprintf("wss://%s:%d/elephant/ws", AppConfig.ServerHost, AppConfig.ServerPort)
+}
+
+func GetCounter() int64 {
+	defer counter.Add(1)
+	return counter.Load()
 }
