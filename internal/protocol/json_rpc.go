@@ -67,7 +67,7 @@ func NewAgentHello() *JsonRPC {
 			"shell":       true,
 			"myip":        utils.GetOutboundIP(),
 			"seq":         config.GetCounter(),
-			"alias":       config.AppConfig.Alias,
+			"alias":       utils.GetOsHostname(),
 			"version":     config.Version,
 			"flowControl": config.AppConfig.FlowControl,
 		},

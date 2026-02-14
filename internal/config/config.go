@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Version = "unknown"
+	Version = "2.0.0"
 	counter atomic.Int64
 )
 

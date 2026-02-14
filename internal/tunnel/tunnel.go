@@ -95,7 +95,8 @@ func (t *Tunnel) Start() {
 
 	t.conn = conn
 	t.createInboundChannel(conn)
-	t.SpawnHandleInboundAndOutbound()
+	t.SpawnHandleInbound()
+	t.SpawnHandleOutbound()
 	t.SendAgentHello()
 
 }
@@ -170,9 +171,8 @@ func (t *Tunnel) tunnelRead(byteBuf *bytes.Buffer) {
 	}
 }
 
-func (t *Tunnel) SpawnHandleInboundAndOutbound() {
+func (t *Tunnel) SpawnHandleInbound() {
 	go func() {
-		defer close(t.outboundChannel)
 		for {
 			select {
 			case byteBuf, ok := <-t.inboundChannel:
@@ -182,6 +182,19 @@ func (t *Tunnel) SpawnHandleInboundAndOutbound() {
 				}
 				t.tunnelRead(byteBuf)
 
+			case <-t.context.Done():
+				slog.Info("Tunnel handle context done, exiting handle INBOUND loop")
+				return
+			}
+
+		}
+	}()
+}
+func (t *Tunnel) SpawnHandleOutbound() {
+	go func() {
+		defer close(t.outboundChannel)
+		for {
+			select {
 			case outboundData, ok := <-t.outboundChannel:
 				if !ok {
 					slog.Info("Outbound byte buffer channel closed, exiting handle loop")
@@ -199,7 +212,7 @@ func (t *Tunnel) SpawnHandleInboundAndOutbound() {
 				}
 
 			case <-t.context.Done():
-				slog.Info("Tunnel handle context done, exiting handle loop")
+				slog.Info("Tunnel handle context done, exiting handle OUTBOUND loop")
 				return
 			}
 
